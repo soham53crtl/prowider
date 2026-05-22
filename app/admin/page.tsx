@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 
 interface Provider {
   id: number
@@ -8,6 +7,28 @@ interface Provider {
   monthlyQuota: number
   leadsReceived: number
   remainingQuota: number
+}
+
+function Toast({ toast }: { toast: { msg: string; ok: boolean } | null }) {
+  if (!toast) return null
+  return (
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-sm font-medium border transition-all ${
+      toast.ok
+        ? 'bg-emerald-900/90 border-emerald-700/50 text-emerald-200'
+        : 'bg-red-900/90 border-red-700/50 text-red-200'
+    }`}>
+      {toast.ok ? (
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      )}
+      {toast.msg}
+    </div>
+  )
 }
 
 export default function AdminPage() {
@@ -20,7 +41,7 @@ export default function AdminPage() {
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3000)
+    setTimeout(() => setToast(null), 3500)
   }
 
   const fetchProviders = useCallback(async () => {
@@ -32,13 +53,8 @@ export default function AdminPage() {
 
   useEffect(() => { fetchProviders() }, [fetchProviders])
 
-  const handleQuotaChange = (id: number, value: string) => {
-    setEditingQuota(prev => ({ ...prev, [id]: value }))
-  }
-
   const saveQuota = async (id: number) => {
-    const raw = editingQuota[id]
-    const quota = parseInt(raw)
+    const quota = parseInt(editingQuota[id])
     if (isNaN(quota) || quota < 0) {
       showToast('Quota must be a positive number', false)
       return
@@ -51,7 +67,7 @@ export default function AdminPage() {
         body: JSON.stringify({ monthlyQuota: quota }),
       })
       if (res.ok) {
-        showToast('Quota updated')
+        showToast('Quota updated successfully')
         setEditingQuota(prev => { const n = { ...prev }; delete n[id]; return n })
         await fetchProviders()
       } else {
@@ -64,7 +80,7 @@ export default function AdminPage() {
   }
 
   const resetLeads = async (id: number, name: string) => {
-    if (!confirm(`Reset lead count for ${name} to 0? This only resets the counter — existing lead assignments are kept.`)) return
+    if (!confirm(`Reset lead counter for ${name} to 0?\n\nExisting lead assignments are preserved — only the quota counter is cleared.`)) return
     setResetting(prev => ({ ...prev, [id]: true }))
     try {
       const res = await fetch(`/api/admin/providers/${id}`, {
@@ -86,132 +102,126 @@ export default function AdminPage() {
 
   const totalLeads = providers.reduce((s, p) => s + p.leadsReceived, 0)
   const totalCapacity = providers.reduce((s, p) => s + p.monthlyQuota, 0)
+  const remainingCapacity = totalCapacity - totalLeads
   const fullProviders = providers.filter(p => p.remainingQuota === 0).length
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Link href="/" className="text-gray-400 hover:text-white text-sm mb-1 inline-block">← Back</Link>
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-gray-400 text-sm mt-1">Manage provider quotas and reset lead counters</p>
+    <main className="flex-1 bg-slate-950 p-6 md:p-8">
+      <Toast toast={toast} />
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage provider quotas and reset lead counters</p>
         </div>
 
-        {/* Toast */}
-        {toast && (
-          <div className={`mb-4 rounded-lg px-4 py-2 text-sm font-medium ${toast.ok ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
-            {toast.ok ? '✓' : '✗'} {toast.msg}
-          </div>
-        )}
-
-        {/* Summary cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-900 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-blue-400">{totalLeads}</p>
-            <p className="text-sm text-gray-400 mt-1">Total Leads This Month</p>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <p className="text-3xl font-bold text-indigo-400">{totalLeads}</p>
+            <p className="text-sm text-slate-400 mt-1.5">Leads This Month</p>
           </div>
-          <div className="bg-gray-900 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{totalCapacity - totalLeads}</p>
-            <p className="text-sm text-gray-400 mt-1">Remaining Capacity</p>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <p className="text-3xl font-bold text-emerald-400">{remainingCapacity}</p>
+            <p className="text-sm text-slate-400 mt-1.5">Remaining Capacity</p>
           </div>
-          <div className="bg-gray-900 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-red-400">{fullProviders}</p>
-            <p className="text-sm text-gray-400 mt-1">Providers at Full Quota</p>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <p className="text-3xl font-bold text-red-400">{fullProviders}</p>
+            <p className="text-sm text-slate-400 mt-1.5">Providers at Full Quota</p>
           </div>
         </div>
 
-        {/* Provider table */}
-        {loading ? (
-          <div className="text-center text-gray-500 py-16">Loading providers…</div>
-        ) : (
-          <div className="bg-gray-900 rounded-xl overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <h2 className="font-semibold text-white">Provider Quotas</h2>
+            <span className="text-xs text-slate-500">Click a quota number to edit it inline</span>
+          </div>
+
+          {loading ? (
+            <div className="text-center text-slate-500 py-16 text-sm">Loading providers…</div>
+          ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-400 text-xs uppercase tracking-wider border-b border-gray-800">
-                  <th className="text-left px-5 py-3">Provider</th>
-                  <th className="text-center px-5 py-3">Leads Received</th>
-                  <th className="text-center px-5 py-3">Monthly Quota</th>
-                  <th className="text-center px-5 py-3">Remaining</th>
-                  <th className="text-center px-5 py-3">Fill %</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+                  <th className="text-left px-6 py-3.5">Provider</th>
+                  <th className="text-center px-6 py-3.5">Leads</th>
+                  <th className="text-center px-6 py-3.5">Monthly Quota</th>
+                  <th className="text-center px-6 py-3.5">Remaining</th>
+                  <th className="text-center px-6 py-3.5">Fill</th>
+                  <th className="text-right px-6 py-3.5">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {providers.map((p, i) => {
+              <tbody className="divide-y divide-slate-800/50">
+                {providers.map(p => {
                   const fillPct = p.monthlyQuota > 0 ? Math.round((p.leadsReceived / p.monthlyQuota) * 100) : 0
                   const isEditing = editingQuota[p.id] !== undefined
                   return (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-gray-800 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-900/50'}`}
-                    >
-                      <td className="px-5 py-4 font-medium">{p.name}</td>
-                      <td className="px-5 py-4 text-center text-blue-300">{p.leadsReceived}</td>
-
-                      {/* Quota cell — inline edit */}
-                      <td className="px-5 py-4 text-center">
+                    <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-medium text-white">{p.name}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center text-indigo-400 font-semibold">
+                        {p.leadsReceived}
+                      </td>
+                      <td className="px-6 py-4 text-center">
                         {isEditing ? (
                           <div className="flex items-center justify-center gap-2">
                             <input
                               type="number"
                               min={0}
-                              className="w-20 bg-gray-800 border border-blue-500 rounded px-2 py-1 text-center text-white focus:outline-none"
+                              className="w-20 bg-slate-800 border border-indigo-500/50 rounded-lg px-2 py-1.5 text-center text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                               value={editingQuota[p.id]}
-                              onChange={e => handleQuotaChange(p.id, e.target.value)}
+                              onChange={e => setEditingQuota(prev => ({ ...prev, [p.id]: e.target.value }))}
                               onKeyDown={e => { if (e.key === 'Enter') saveQuota(p.id) }}
                               autoFocus
                             />
                             <button
                               onClick={() => saveQuota(p.id)}
                               disabled={saving[p.id]}
-                              className="text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-2 py-1 rounded font-medium"
+                              className="text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-3 py-1.5 rounded-lg font-medium text-white transition"
                             >
                               {saving[p.id] ? '…' : 'Save'}
                             </button>
                             <button
                               onClick={() => setEditingQuota(prev => { const n = { ...prev }; delete n[p.id]; return n })}
-                              className="text-xs text-gray-400 hover:text-white px-1"
+                              className="text-xs text-slate-500 hover:text-white w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 transition"
                             >
                               ✕
                             </button>
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleQuotaChange(p.id, String(p.monthlyQuota))}
-                            className="text-gray-200 hover:text-blue-300 hover:underline transition"
-                            title="Click to edit quota"
+                            onClick={() => setEditingQuota(prev => ({ ...prev, [p.id]: String(p.monthlyQuota) }))}
+                            className="text-slate-200 hover:text-indigo-400 hover:underline transition font-medium"
+                            title="Click to edit"
                           >
                             {p.monthlyQuota}
                           </button>
                         )}
                       </td>
-
-                      <td className="px-5 py-4 text-center">
-                        <span className={`font-semibold ${p.remainingQuota === 0 ? 'text-red-400' : p.remainingQuota <= 3 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`font-semibold ${
+                          p.remainingQuota === 0 ? 'text-red-400' : p.remainingQuota <= 3 ? 'text-amber-400' : 'text-emerald-400'
+                        }`}>
                           {p.remainingQuota}
                         </span>
                       </td>
-
-                      {/* Fill % with bar */}
-                      <td className="px-5 py-4 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs text-gray-400">{fillPct}%</span>
-                          <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-xs text-slate-500">{fillPct}%</span>
+                          <div className="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${fillPct >= 100 ? 'bg-red-500' : fillPct >= 70 ? 'bg-yellow-500' : 'bg-emerald-500'}`}
+                              className={`h-full rounded-full transition-all ${
+                                fillPct >= 100 ? 'bg-red-500' : fillPct >= 70 ? 'bg-amber-500' : 'bg-indigo-500'
+                              }`}
                               style={{ width: `${Math.min(fillPct, 100)}%` }}
                             />
                           </div>
                         </div>
                       </td>
-
-                      {/* Actions */}
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => resetLeads(p.id, p.name)}
                           disabled={resetting[p.id] || p.leadsReceived === 0}
-                          className="text-xs bg-gray-800 hover:bg-red-900 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-3 py-1.5 rounded-lg transition"
+                          className="text-xs bg-slate-800 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed text-slate-400 border border-slate-700 px-3 py-1.5 rounded-lg transition"
                         >
                           {resetting[p.id] ? 'Resetting…' : 'Reset Counter'}
                         </button>
@@ -221,11 +231,11 @@ export default function AdminPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
 
-        <p className="text-xs text-gray-600 mt-4 text-center">
-          Resetting a counter only clears the quota tracker — existing lead assignments in the database are preserved.
+        <p className="text-xs text-slate-600 mt-4 text-center">
+          Resetting a counter only clears the quota tracker — existing lead assignments are preserved in the database.
         </p>
       </div>
     </main>
