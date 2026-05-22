@@ -1,37 +1,12 @@
 'use client'
 import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import type { Metadata } from 'next'
+import { useSearchParams } from 'next/navigation'
 
 function LoginForm() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
-
-  async function handleCredentials(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const result = await signIn('credentials', { username, password, redirect: false })
-      if (result?.error) {
-        setError('Invalid username or password')
-      } else {
-        router.push('/')
-        router.refresh()
-      }
-    } catch {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleGoogle() {
     setGoogleLoading(true)
@@ -52,7 +27,8 @@ function LoginForm() {
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your account</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">Sign in to your account</h2>
+          <p className="text-slate-400 text-sm mb-6">Use your Google account to access Prowider.</p>
 
           {(callbackError === 'OAuthAccountNotLinked' || callbackError === 'AccessDenied') && (
             <div className="mb-5 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300">
@@ -63,7 +39,7 @@ function LoginForm() {
           <button
             onClick={handleGoogle}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed text-gray-800 font-semibold py-3 rounded-xl transition shadow mb-5"
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed text-gray-800 font-semibold py-3.5 rounded-xl transition shadow"
           >
             {googleLoading ? (
               <svg className="w-5 h-5 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -80,51 +56,6 @@ function LoginForm() {
             )}
             {googleLoading ? 'Redirecting…' : 'Continue with Google'}
           </button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-slate-800" />
-            <span className="text-xs text-slate-600 font-medium">or sign in with username</span>
-            <div className="flex-1 h-px bg-slate-800" />
-          </div>
-
-          <form onSubmit={handleCredentials} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
-                placeholder="Enter your username"
-                autoComplete="username"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm"
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-500/20"
-            >
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">Prowider v1.0 · Secure Lead Management</p>

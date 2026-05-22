@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import CredentialsProvider from 'next-auth/providers/credentials'
 import type { NextAuthOptions } from 'next-auth'
 
 const allowedEmails: string[] | null = process.env.ALLOWED_GOOGLE_EMAILS
@@ -9,32 +8,9 @@ const allowedEmails: string[] | null = process.env.ALLOWED_GOOGLE_EMAILS
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    CredentialsProvider({
-      id: 'credentials',
-      name: 'Credentials',
-      credentials: {
-        username: { label: 'Username', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        const expectedUsername = process.env.ADMIN_USERNAME || 'admin'
-        const expectedPassword = process.env.ADMIN_PASSWORD || 'prowider2024'
-        if (
-          credentials?.username === expectedUsername &&
-          credentials?.password === expectedPassword
-        ) {
-          return { id: 'admin', name: 'Admin', email: 'admin@prowider.local' }
-        }
-        return null
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
   callbacks: {
