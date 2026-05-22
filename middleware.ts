@@ -10,6 +10,8 @@ const PUBLIC_PREFIXES = [
   '/api/leads',
   '/api/services',
   '/api/webhook',
+  '/robots.txt',
+  '/sitemap.xml',
 ]
 
 export async function middleware(request: NextRequest) {
