@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -12,13 +13,6 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
@@ -50,7 +44,7 @@ export default function Navbar() {
           </nav>
 
           <button
-            onClick={handleLogout}
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg transition font-medium"
           >
             Sign out
