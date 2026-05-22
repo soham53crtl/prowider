@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import type { Metadata } from 'next'
 
 function LoginForm() {
   const [username, setUsername] = useState('')
@@ -12,20 +12,14 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-
   const callbackError = searchParams.get('error')
-  const hasGoogle = process.env.NEXT_PUBLIC_HAS_GOOGLE !== 'false'
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
-      })
+      const result = await signIn('credentials', { username, password, redirect: false })
       if (result?.error) {
         setError('Invalid username or password')
       } else {
@@ -106,7 +100,6 @@ function LoginForm() {
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
               <input
@@ -119,26 +112,22 @@ function LoginForm() {
                 required
               />
             </div>
-
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-500/20"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-slate-600 text-xs mt-6">
-          Prowider v1.0 · Secure Lead Management
-        </p>
+        <p className="text-center text-slate-600 text-xs mt-6">Prowider v1.0 · Secure Lead Management</p>
       </div>
     </div>
   )
